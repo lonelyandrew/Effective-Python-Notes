@@ -1,9 +1,6 @@
 # Effective Python
----
 
 Author: **Brett Slatkin**
-
-[TOC]
 
 ## Chapter 1: Pythonic Thinking
 
@@ -25,7 +22,7 @@ Python 3.6.2
 
 You can also figure out the version of Python you're using at runtime by inspecting values in the `sys` built-in module.
 
-```python
+```
 >>> import sys
 >>> print(sys.version_info)
 sys.version_info(major=2, minor=7, micro=10, releaselevel='final', serial=0)
@@ -58,3 +55,23 @@ Here are a few rules you should be sure to follow:
 + Functions, variables, and attributes should be in `lowercase_underscore` format.
 + Protected instance attributes should be in `_leading_underscore` format.
 + Private instance attributes should be in `__double_leading_underscore` format.
++ Classes and exceptions should be in `CapitalizedWord` format.
++ Moudle-level constants should ve in `ALL_CAPS` format.
++ Instance methods in the classes should use `self` as the name of the first parameter (which refers to the object).
++ Class methods should use `cls` as the name of the first parameter (which refers to the class).
+
+**Expressiona and Statements**: *The Zen of Python* states: "There should be one --- and preferably only one --- obvious way to do it."
+
++ Use inline negation (`if a is not b`) intead of negation of positive expressions (`if not a is b`).
++ Don't check for empty values (like `[]` or `''`) by checking the length (`if len(somelist) == 0`). Use `if not somelist` and assume empty values implicitly evaluate to `False`.
++ The same thing goes for non-empty values (like `[1]` or 'hi'). The statement `if somelist` is implicitly `True` for non-empty values.
++ Avoid single-line `if` statement, `for` and `while` loops, and `except` compound statements. Spread these over multiple lines for clarity.
++ Always put `import` statements at the top of a file.
++ Always use absolute names for modules when importing them, not names relative to the current module's own path. For example, to import the `foo` module from the `bar` package, you should do `from bar import foo`, not just `import foo`.
++ If you must do relative imports, use the explicit syntax `from . import foo`.
++ Imports should be in sections in the following order: standard library modules, third-party modules, your own modules. Each subsection should have imports in alphabetical order.
+
+P.S.
++ If you have not got a detailed Python style guide, a recommandation is [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html).
++ A better way to check the code style is to install a linter in your editor (also mentioned in the Google Python Style Guide), such as `Pylint` and `flake8`.
+
