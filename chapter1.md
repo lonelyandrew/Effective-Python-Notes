@@ -13,7 +13,7 @@ $ python --version
 Python 2.7.10
 ```
 
-Python3 is usually available under the name `python3`.
+Python 3 is usually available under the name `python3`.
 
 ```bash
 $ python3 --version
@@ -56,13 +56,13 @@ Here are a few rules you should be sure to follow:
 + Protected instance attributes should be in `_leading_underscore` format.
 + Private instance attributes should be in `__double_leading_underscore` format.
 + Classes and exceptions should be in `CapitalizedWord` format.
-+ Moudle-level constants should ve in `ALL_CAPS` format.
++ Module-level constants should be in `ALL_CAPS` format.
 + Instance methods in the classes should use `self` as the name of the first parameter (which refers to the object).
 + Class methods should use `cls` as the name of the first parameter (which refers to the class).
 
 **Expressiona and Statements**: *The Zen of Python* states: "There should be one --- and preferably only one --- obvious way to do it."
 
-+ Use inline negation (`if a is not b`) intead of negation of positive expressions (`if not a is b`).
++ Use inline negation (`if a is not b`) instead of negation of positive expressions (`if not a is b`).
 + Don't check for empty values (like `[]` or `''`) by checking the length (`if len(somelist) == 0`). Use `if not somelist` and assume empty values implicitly evaluate to `False`.
 + The same thing goes for non-empty values (like `[1]` or 'hi'). The statement `if somelist` is implicitly `True` for non-empty values.
 + Avoid single-line `if` statement, `for` and `while` loops, and `except` compound statements. Spread these over multiple lines for clarity.
@@ -72,6 +72,18 @@ Here are a few rules you should be sure to follow:
 + Imports should be in sections in the following order: standard library modules, third-party modules, your own modules. Each subsection should have imports in alphabetical order.
 
 P.S.
-+ If you have not got a detailed Python style guide, a recommandation is [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html).
-+ A better way to check the code style is to install a linter in your editor (also mentioned in the Google Python Style Guide), such as `Pylint` and `flake8`.
++ If you have not got a detailed Python style guide, a recommendation is [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html).
++ A better way to check the code style is to install a lint tool in your editor (also mentioned in the Google Python Style Guide), such as `Pylint` and `flake8`.
 
+### Item 3: Know the Differences Between `bytes`, `str`, and `unicode`
+
+In Python 3, there are two types that represent sequences of characters: `bytes` and `str`. Instances of `bytes` contains raw 8-bit values. Instances of `str` contain Unicode characters.
+
+In Python 2, there are two types that represent sequences of characters: `str` and `unicode`. Instances of `str` contains raw 8-bit values. Instances of `unicode` contain Unicode characters.
+
+`str` instances in Python 3 and `unicode` instances in Python 2 do not have an associated binary encoding. To convert Unicode character to binary data, you must use the `encode` method.
+To convert binary data to Unicode characters, you must use the `decode` method.
+
+The core of your program should use Unicode character types (`str` in Python 3, `unicode` in Python 2) and should not assume anything about character encodings.
+
+In Python 3, operations involving file handles defaults to UTF-8 encoding. In Python 2, file operations default to binary encoding.
