@@ -1,10 +1,6 @@
-# Effective Python
+# Chapter 1: Pythonic Thinking
 
-Author: **Brett Slatkin**
-
-## Chapter 1: Pythonic Thinking
-
-### Item 1: Know Which Version of Python You're Using
+## Item 1: Know Which Version of Python You're Using
 
 To find out exactly which version of Python you're using, you can use the `--version` flag.
 
@@ -33,7 +29,7 @@ sys.version_info(major=2, minor=7, micro=10, releaselevel='final', serial=0)
 
 There are multiple popular runtimes for Python: CPython, JPython, IronPython, PyPy, etc.
 
-### Item 2: Follow the PEP 8 Style Guide
+## Item 2: Follow the PEP 8 Style Guide
 
 Python Enhancement Proposal #8, otherwise known as PEP 8, is the style guide for how to format Python code.
 
@@ -75,7 +71,7 @@ P.S.
 + If you have not got a detailed Python style guide, a recommendation is [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html).
 + A better way to check the code style is to install a lint tool in your editor (also mentioned in the Google Python Style Guide), such as `Pylint` and `flake8`.
 
-### Item 3: Know the Differences Between `bytes`, `str`, and `unicode`
+## Item 3: Know the Differences Between `bytes`, `str`, and `unicode`
 
 In Python 3, there are two types that represent sequences of characters: `bytes` and `str`. Instances of `bytes` contains raw 8-bit values. Instances of `str` contain Unicode characters.
 
@@ -88,7 +84,7 @@ The core of your program should use Unicode character types (`str` in Python 3, 
 
 In Python 3, operations involving file handles defaults to UTF-8 encoding. In Python 2, file operations default to binary encoding.
 
-### Item 4: Write Helper Functions Instead of Complex Expressions
+## Item 4: Write Helper Functions Instead of Complex Expressions
 
 Python's syntax makes it all too easy to write single-line expressions that are overly complicated and difficult to read.
 
@@ -96,8 +92,16 @@ Move complex expressions into helper functions, especially if you need to use th
 
 The `if/else` expression provides a more readable alternative to using Boolean operators like `or` and `and` in expressions.
 
-### Item 5: Know How to Slice Sequences
+## Item 5: Know How to Slice Sequences
 
 Slicing can be extended to any Python class that implements the `__getitem__` and `__setitem__` special methods (see Item 28: "Inherit from `collections.abc` for Custom Container Types").
 
 When `n` is zero, the expression `somelist[-0:]` will result in a copy the original list.
+
+## Item 6: Avoid Using `start`, `end`, and `stride` in a Single Slice
+
+Specifying `start`, `end`, and `stride` in a slice can be extremely confusing.
+
+Prefer using positive `stride` values in slices without `start` or `end` indexes. Avoid negative `stride` values if possible.
+
+Avoid using `start`, `end`, and `stride` together in a single slice. If you need all three parameters, consider doing two assignments (one to slice, another to stride) or using `islice` from the `itertools` built-in module.
