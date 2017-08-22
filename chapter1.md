@@ -87,3 +87,11 @@ To convert binary data to Unicode characters, you must use the `decode` method.
 The core of your program should use Unicode character types (`str` in Python 3, `unicode` in Python 2) and should not assume anything about character encodings.
 
 In Python 3, operations involving file handles defaults to UTF-8 encoding. In Python 2, file operations default to binary encoding.
+
+### Item 4: Write Helper Functions Instead of Complex Expressions
+
+Python's syntax makes it all too easy to write single-line expressions that are overly complicated and difficult to read.
+
+Move complex expressions into helper functions, especially if you need to use the same logic repeatedly.
+
+The `if/else` expression provides a more readable alternative to using Boolean operators like `or` and `and` in expressions.
