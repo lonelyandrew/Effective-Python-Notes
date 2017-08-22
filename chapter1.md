@@ -95,3 +95,9 @@ Python's syntax makes it all too easy to write single-line expressions that are 
 Move complex expressions into helper functions, especially if you need to use the same logic repeatedly.
 
 The `if/else` expression provides a more readable alternative to using Boolean operators like `or` and `and` in expressions.
+
+### Item 5: Know How to Slice Sequences
+
+Slicing can be extended to any Python class that implements the `__getitem__` and `__setitem__` special methods (see Item 28: "Inherit from `collections.abc` for Custom Container Types").
+
+When `n` is zero, the expression `somelist[-0:]` will result in a copy the original list.
