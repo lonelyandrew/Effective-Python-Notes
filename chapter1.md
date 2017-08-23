@@ -146,3 +146,40 @@ roots = ((x, x**0.5) for x in it)
 ```
 
 Generator expressions execute very quickly when chained together.
+
+## Item 10: Prefer `enumerate` over `range`
+
+Prefer `enumerate` instead of looping over a `range` and indexing into a sequence.
+
+You can supply a second parameter to `enumerate` to specify the number from which to begin counting (zero is the default).
+
+```python
+a = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+for i, x in enumerate(a):
+    print(f'{i}-{x}')
+# 0-1
+# 1-2
+# 2-3
+# 3-4
+# 4-5
+# 5-6
+# 6-7
+# 7-8
+# 8-9
+# 9-10
+
+for i, x in enumerate(a):
+    print(f'{i}-{x}')
+# 1-1
+# 2-2
+# 3-3
+# 4-4
+# 5-5
+# 6-6
+# 7-7
+# 8-8
+# 9-9
+# 10-10
+```
+
