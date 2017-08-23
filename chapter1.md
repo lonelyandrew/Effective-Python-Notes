@@ -131,3 +131,18 @@ c = [x for x in a if x > 4 and x % 2 == 0]  # Personally prefer this one.
 ```
 
 List comprehensions with more than two expressions are very difficult to read and should be avoided. What you save in the number of lines does not outweigh the difficulties it could cause later.
+
+## Item 9: Consider Generator Expressions for Large Comprehensions
+
+List comprehensions can cause problems for large inputs by using too much memory.
+
+Generator expressions avoid memory issues by producing outputs one at a time as an iterator.
+
+Generator expressions can be composed by passing the iterator from one generator expression into the `for` subexpression of another.
+
+```python
+it = (len(x) for x in open('/tmp/my_file.txt'))
+roots = ((x, x**0.5) for x in it)
+```
+
+Generator expressions execute very quickly when chained together.
