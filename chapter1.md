@@ -105,3 +105,29 @@ Specifying `start`, `end`, and `stride` in a slice can be extremely confusing.
 Prefer using positive `stride` values in slices without `start` or `end` indexes. Avoid negative `stride` values if possible.
 
 Avoid using `start`, `end`, and `stride` together in a single slice. If you need all three parameters, consider doing two assignments (one to slice, another to stride) or using `islice` from the `itertools` built-in module.
+
+## Item 7: Use List Comprehensions Instead of `map` and `filter`
+
+List comprehensions are clearer than the `map` and `filter` built-in functions because they don't require extra `lambda` expressions.
+
+List comprehensions allow you to easily skip items from the input list, a behavior `map` doesn't support without help from `filter`.
+
+Dictionaries, generators, and sets are also support comprehension expressions.
+
+```python
+d = {key: value for (key, value) in iterable}  # dict comprehension
+s = {x for x in iterable}  # set comprehension
+g = (x for x in iterable)  # generator comprehension
+```
+
+## Item 8: Avoid More Than Two Expressions in List Comprehensions
+
+List comprehensions support multiple `if` conditions. Multiple conditions at the same loop level are an implicit `and` expression.
+
+```python
+a = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+b = [x for x in a if x > 4 if x % 2 == 0]
+c = [x for x in a if x > 4 and x % 2 == 0]  # Personally prefer this one.
+```
+
+List comprehensions with more than two expressions are very difficult to read and should be avoided. What you save in the number of lines does not outweigh the difficulties it could cause later.
