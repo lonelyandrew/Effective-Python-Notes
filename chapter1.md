@@ -183,3 +183,56 @@ for i, x in enumerate(a):
 # 10-10
 ```
 
+## Item 11: Use `zip` to Process Iterators in Parallel
+
+The `zip` built-in function can be used to iterate over multiple iterators in parallel.
+
+In Python 3, `zip` is a lazy generator that produces tuples. In Python 2, `zip` returns the full result as a list of tuples.
+This could potentially use a lot of memory and cause your program to crash. If you want to `zip` very large iterators in Python 2,
+you should use `izip` from the `itertools` built-in module.
+`zip` behaves strangely if the input iterators are of different lengths.
+
+```python
+>>> a = [1, 2, 3, 4, 5]
+>>> b = ['a', 'b', 'c', 'd']
+>>> for num, char in zip(a,b):
+    ...     print(f'{num}-{char}')
+    ...
+    1-a
+    2-b
+    3-c
+    4-d
+```
+
+This is just how `zip` works. It keeps yielding tuples until a wrapped iterator is exhausted.
+If you are not confident that the lengths of the lists you want to zip are equal, consider using the `zip_longest` function from the `itertools` built-in module instead,
+also called `izip_longest` in Python 2.
+
+```python
+>>> from itertools import zip_longest
+>>> for num, char in zip_longest(a,b):
+    ...     print(f'{num}-{char}')
+    ...
+    1-a
+    2-b
+    3-c
+    4-d
+    5-None
+```
+
+## Item 12: Avoid `else` Blocks After `for` and `while` Loops
+
+Python has special syntax that allows `else` blocks to immediately follow `for` and `while` loop interior blocks.
+
+The `else` block after a loop only runs if the loop body did not encounter a `break` statement.
+
+Avoid using `else` blocks after loops because their behavior isn't intuitive and can be confusing.
+
+## Item 13: Take Advantage of Each Block in `try`/`except`/`else`/`finally`
+
+Use `try/finally` when you want exceptions to propagate up, but you also want to run cleanup code even when exceptions occur.
+
+Use `try/except/else` to make it clear which exceptions will be handled by your code and which exceptions will propagate up. The `else` block helps you minimize the amount of code in the `try` block and improves readability.
+And `else` block can be used to perform additional actions after a successful `try` block but before common cleanup in a `finally` block.
+
+### (END OF CHAPTER ONE)
