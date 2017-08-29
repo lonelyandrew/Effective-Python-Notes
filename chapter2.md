@@ -16,3 +16,17 @@ Some values are evaluated to `False` in conditional expressions, such as:
 
 Reference: [3.4. Arbitrary Types Treated As Boolean](http://anh.cs.luc.edu/python/hands-on/3.1/handsonHtml/boolean.html)
 
+## Item 15: Know How Closures Interact with Variable Scope
+
+When you reference a variable in an expression, the Python interpreter will traverse the scope to resolve the reference in this order:
+1. The current function's scope
+2. Any enclosing scopes
+3. The scope of the module that contains the code (also called the *global* scope)
+4. The built-in scope
+
+In Python 3, use the `nonlocal` statement to indicate when a closure can modify a variable in its enclosing scopes. It's complementary to the `global` statement, which indicates that a variable's assignment should go directly into
+the module scope.
+
+In Python 2, use a mutable value (like a single-item list) to work around the lack of the `nonlocal` statement.
+
+Avoid using `nonlocal` statements for anything beyond simple functions.
