@@ -30,3 +30,11 @@ the module scope.
 In Python 2, use a mutable value (like a single-item list) to work around the lack of the `nonlocal` statement.
 
 Avoid using `nonlocal` statements for anything beyond simple functions.
+
+## Item 16: Consider Generators Instead of Returning Lists
+
+Using generators can be clearer than the alternative of returning lists of accumulated results.
+
+The iterator returned by a generator produces the set of values passed to `yield` expressions within the generator function's body.
+
+Generators can produce a sequence of outputs for arbitrarily large inputs because their working memory doesn't include all inputs and outputs.
