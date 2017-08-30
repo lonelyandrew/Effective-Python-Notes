@@ -38,3 +38,15 @@ Using generators can be clearer than the alternative of returning lists of accum
 The iterator returned by a generator produces the set of values passed to `yield` expressions within the generator function's body.
 
 Generators can produce a sequence of outputs for arbitrarily large inputs because their working memory doesn't include all inputs and outputs.
+
+## Item 17: Be Defensive When Iterating Over Arguments
+
+Beware of functions that iterate over input arguments multiple times. If these arguments are iterators, you may see strange behavior and missing values.
+
+Python's iterator protocol defines how containers and iterators interact with the `iter` and `next` built-in functions, `for` loops, and related expressions.
+
+You can easily define your own iterable container type by implementing the `__iter__` method as a generator.
+
+You can detect that a value is an iterator (instead of a container) if calling `iter` on it twice produces the same result, `iter(x) is iter(x)`, which can then be progressed with the next built-in function.
+
+## Item 18:
