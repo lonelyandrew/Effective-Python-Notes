@@ -49,4 +49,34 @@ You can easily define your own iterable container type by implementing the `__it
 
 You can detect that a value is an iterator (instead of a container) if calling `iter` on it twice produces the same result, `iter(x) is iter(x)`, which can then be progressed with the next built-in function.
 
-## Item 18:
+## Item 18: Reduce Visual Noise with Variable Positional Arguments
+
+A value passed to a function (or method) when calling the function. There are two kinds of argument:
++ *keyword argument*: an argument preceded by an identifier (e.g. `name=`) in a function call or passed as a value in a dictionary preceded by `**`.
+For example, 3 and 5 are both keyword arguments in the following calls to `complex()`:
+```python
+complex(real=3, imag=5)
+complex(**{'real': 3, 'imag': 5})
+```
++ *positional argument*: an argument that is not a keyword argument. Positional arguments can appear at the beginning of an argument list and/or be passed as elements of an iterable preceded by `*`. For example, 3 and 5 are both positional arguments in the following calls:
+```python
+complex(3, 5)
+complex(*(3, 5))
+```
+
+Accepting optional positional arguments (often called *star args* in reference to the conventional name for the parameter, `*args`) can make a function call more clear and remove visual noise.
+
+```python
+def log(message, *values):
+    if not values:
+        print(message)
+    else:
+        values_str = ', '.join(str(x) for x in values)
+        print(f'{message}: {values_str}')
+```
+
+The first issue is that variable arguments are always turned into a tuple before they are passed to your function. This means that if the caller of your function use the `*` operator on a generator, it will be iterated
+until it's exhausted. Functions that accept `*args` are best for situations where you know the number of inputs in the argument list will be reasonably small.
+
+The second issue with `*args` is that you can't add new positional arguments to your function in the future without migrating every caller. To avoid this possibility entirely, you should use keyword-only arguments when
+you want to extend functions that accept `*args`.
