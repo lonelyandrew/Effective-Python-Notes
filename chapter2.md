@@ -89,4 +89,22 @@ The second impact of keyword arguments is that they can have default values spec
 
 The third reason to use keyword arguments is that they provide a powerful way to extend a function's parameters while remaining backwards compatible with existing callers.
 
+## Item 20: Use `None` and Docstrings to Specify Dynamic Default Arguments
+Default argument values are evaluated only once per module load, which usually happens when a program starts up.This can cause odd behaviors for dynamic values (like `{}` or `or`).
+
+Use `None` as the default value for keyword arguments that have a dynamic value. Document the actual default behavior in the function's docstring.
+
+```python
+def log(message, when=None):
+    '''Log a message with a timestamp.
+    
+    Args:
+        message: Message to print.
+        when: datetime of when the message occured.
+            Defaults to the present time.
+    '''
+    when = datetime.now() if when is None else when
+    print(f'{when}: {message}')
+```
+
 
