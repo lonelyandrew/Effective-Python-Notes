@@ -78,5 +78,15 @@ def log(message, *values):
 The first issue is that variable arguments are always turned into a tuple before they are passed to your function. This means that if the caller of your function use the `*` operator on a generator, it will be iterated
 until it's exhausted. Functions that accept `*args` are best for situations where you know the number of inputs in the argument list will be reasonably small.
 
-The second issue with `*args` is that you can't add new positional arguments to your function in the future without migrating every caller. To avoid this possibility entirely, you should use keyword-only arguments when
-you want to extend functions that accept `*args`.
+The second issue with `*args` is that you can't add new positional arguments to your function in the future without migrating every caller. To avoid this possibility entirely, you should use keyword-only arguments when you want to extend functions that accept `*args`.
+
+## Item 19: Provide Optional Behavior with Keyword Arguments
+The flexibility of keyword arguments provides three significant benefits.
+
+The first advantage is that keyword arguments make the function call clearer to new readers of the code.
+
+The second impact of keyword arguments is that they can have default values specified in the function definition. This can eliminate repetitive code and reduce noise.
+
+The third reason to use keyword arguments is that they provide a powerful way to extend a function's parameters while remaining backwards compatible with existing callers.
+
+
