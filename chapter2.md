@@ -107,4 +107,83 @@ def log(message, when=None):
     print(f'{when}: {message}')
 ```
 
+## Item 21: Enforce Clarity with Keyword-Only Arguments
+In Python 3, you can demand clarity by defining your functions with keyword-only arguments. These arguments can only be supplied by keyword, never by position. The `*` symbol in the argument list indicates the end of positional arguments and the beginning of keyword-only arguments.
+
+```python
+> cat test.py
+
+# Python 3
+def safe_division(number, divisor, *,
+                  ignore_overflow=False,
+                  ignore_zero_division=False):
+    try:
+        return number / divisor
+    except OverflowError:
+        if ignore_overflow:
+            return 0
+        else:
+            raise
+    except ZeroDivisionError:
+        if ignore_zero_division:
+            return float('inf')
+        else:
+            raise
+            
+> python3
+>>> from test import safe_division
+>>> safe_division(1, 0, ignore_zero_division=True)
+inf
+>>> safe_division(1, 10**500, ignore_overflow=True)
+0.0
+>>> safe_division(1, 0, True)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+TypeError: safe_division() takes 2 positional arguments but 3 were given
+```
+
+Python2 doesn't have explicit syntax for specifying keyword-only arguments like Python 3. But you can achieve the same behavior of raising `TypingErrors` for invalid function calls by using the `**` operator in argument lists. The `**` operator is similar to the `*` operator, except that instead of accepting a variable number of positional arguments, it accepts any number of keyword arguments, even when they are not defined.
+
+```python
+> cat test.py
+
+# Python 2
+def safe_division(number, divisor, **kwargs):
+    ignore_overflow = kwargs.pop('ignore_overflow', False)
+    ignore_zero_division = kwargs.pop('ignore_zero_division', False)
+    if kwargs:
+        raise TypeError('Unexcepted **kwargs: %r' %  kwargs)
+    try:
+        return number / divisor
+    except OverflowError:
+        if ignore_overflow:
+            return 0
+        else:
+            raise
+    except ZeroDivisionError:
+        if ignore_zero_division:
+            return float('inf')
+        else:
+            raise
+            
+> python
+
+>>> from test import safe_division
+>>> safe_division(1, 0, ignore_zero_division=True)
+inf
+>>> safe_division(1, 10**500, ignore_overflow=True)
+0L
+>>> safe_division(1, 0, True)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+TypeError: safe_division() takes exactly 2 arguments (3 given)
+>>> safe_division(1, 0, unexcepted=True)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "test.py", line 23, in safe_division
+    raise TypeError('Unexcepted **kwargs: %r' %  kwargs)
+TypeError: Unexcepted **kwargs: {'unexcepted': True}
+```
+
+(END OF CHAPTER 2)
 
