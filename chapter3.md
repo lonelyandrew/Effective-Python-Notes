@@ -111,3 +111,59 @@ class Implicit(MyBaseClass):
 
 You may guess that you could use `self.__class__` as an argument to `super`, but this breaks because of the way `super` is implemented in Python 2.
 
+## Item 26: Use Multiple Inheritance Only for Mix-in Utility Classes
+If you find yourself desiring the convenience and encapsulation that comes with multiple inheritance, consider writing a **mix-in** instead.
+
+A mix-in is a small class that only defines a set of additional methods that a class should provide. Mix-in classes don't define their own instance attributes nor their `__init__` constructor to be called.
+
+Here, I define an example mix-in that accomplishes this with a new public method that's added to any class that inherits from it:
+
+```Python
+class ToDictMixin(object):
+    def to_dict(self):
+        return self._traverse_dict(self.__dict__)
+
+    def _traverse_dict(self, instance_dict):
+        output = {}
+        for key, value in instance_dict.items():
+            output[key] = self._traverse(key, value)
+        return output
+
+    def _traverse(self, key, value):
+        if isinstance(value, ToDictMixin):
+            return value.to_dict()
+        elif isinstance(value, dict):
+            return self._traverse_dict(value)
+        elif isinstance(value, list):
+            return [self._traverse(key, i) for i in value]
+        elif hasattr(value, '__dict__'):
+            return self._traverse_dict(value.__dict__)
+        else:
+            return value
+
+
+class BinaryTree(ToDictMixin):
+    def __init__(self, value, *, left=None, right=None):
+        self.value = value
+        self.left = left
+        self.right = right
+
+
+if __name__ == '__main__':
+    tree = BinaryTree(10,
+                      left=BinaryTree(7, right=BinaryTree(9)),
+                      right=BinaryTree(13, left=BinaryTree(11)))
+    from pprint import pprint
+    pprint(tree.to_dict())
+
+>>>
+{'left': {'left': None,
+          'right': {'left': None, 'right': None, 'value': 9},
+          'value': 7},
+ 'right': {'left': {'left': None, 'right': None, 'value': 11},
+           'right': None,
+           'value': 13},
+ 'value': 10}
+```
+
+
