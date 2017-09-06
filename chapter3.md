@@ -184,7 +184,9 @@ A subclass can't access its parent class's private fields.
 The private attribute behavior is implemented with a simple transformation of the attribute name. When the Python compiler sees private attribute access in methods like `MyChildObject.get_private_field`, it translates `__private_field` to access `_MyChildObject__private_field` instead. Accessing the parent's private attribute from the child class fails simply because the transformed attributes name doesn't match.
 
 Why doesn't the syntax for private attributes actually enforce strict visibility? The simplest answer is one often-quoted motto of Python:
+
 > We are all consenting adults here.
+
 Python programmers believe that the benefits of being open outweigh the downsides of being closed.
 
 To minimize the damage of accessing internals unknowingly, Python programmers follow a naming convention defined in the style guide. Field prefixed by a single underscore are *protected*, meaning external users of the class should proceed with caution.
