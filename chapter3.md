@@ -166,4 +166,31 @@ if __name__ == '__main__':
  'value': 10}
 ```
 
+## Item 27: Prefer Public Attributes Over Private Ones
+In Python, there are only two types of attribute visibility for a class's attributes: *public* and *private*.
+
+Public attributes can be accessed by anyone using the dot operator on the object. Private field are specified by prefixing an attribute's name with a  double underscore. They can be accessed directly by methods of the containing class.
+
+Class methods also have access to private attributes because they are declared within the surrounding `class` block.
+
+```Python
+@classmethod
+def get_private_field_of_instance(cls, instance):
+    return instance.__private_field
+```
+
+A subclass can't access its parent class's private fields.
+
+The private attribute behavior is implemented with a simple transformation of the attribute name. When the Python compiler sees private attribute access in methods like `MyChildObject.get_private_field`, it translates `__private_field` to access `_MyChildObject__private_field` instead. Accessing the parent's private attribute from the child class fails simply because the transformed attributes name doesn't match.
+
+Why doesn't the syntax for private attributes actually enforce strict visibility? The simplest answer is one often-quoted motto of Python:
+> We are all consenting adults here.
+Python programmers believe that the benefits of being open outweigh the downsides of being closed.
+
+To minimize the damage of accessing internals unknowingly, Python programmers follow a naming convention defined in the style guide. Field prefixed by a single underscore are *protected*, meaning external users of the class should proceed with caution.
+
+In general, it's better to err on the side of allowing subclasses to do more by using protected attributes. Document each protected field and explain which are internal APIs available to subclasses and which should be left alone entirely.
+
+Only consider using private attributes to avoid naming conflicts with subclasses that are out of your control.
+
 
