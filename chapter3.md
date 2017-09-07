@@ -195,4 +195,11 @@ In general, it's better to err on the side of allowing subclasses to do more by 
 
 Only consider using private attributes to avoid naming conflicts with subclasses that are out of your control.
 
+## Item 28: Inherit from `collections.abs` for Custom Container Types
+Beware of the large number of methods required to implement custom container types correctly.
+
+Have your custom container types inherit from the interfaces defined in `collections.abc` to ensure that your classes match required interfaces and behaviors.
+
+(END OF CHAPTER 3)
+
 
