@@ -1,4 +1,4 @@
-# Chapter 4: Metaclasses and Attributes
+a# Chapter 4: Metaclasses and Attributes
 The name of *metaclasses* vaguely implies a concept above and beyond a class. Simply put, metaclasses let you intercept Python's `class` statement and provide special behavior each time a class is defined.
 
 It's important that you follow the *rule of least surprise* and only use the these mechanisms to implement well-understood idioms.
@@ -42,4 +42,12 @@ Follow the rule of least surprise and avoid weird side effects in your `@propert
 For example, don't set other attributes in getter property methods. The best policy is to only modify related object state in `@property.setter` methods.
 
 Ensure that `@property` methods are fast; do slow or complex work using normal methods.
+
+## Item 30: Consider `@property` Instead of Refactoring Attributes
+User `@property` to give existing instance attributes new functionality.
+
+Make incremental progress toward better data models by using `@property`.
+
+Consider refactoring a class and all call sites when you find yourself using `@property` too heavily.
+
 
