@@ -1,4 +1,4 @@
-a# Chapter 4: Metaclasses and Attributes
+# Chapter 4: Metaclasses and Attributes
 The name of *metaclasses* vaguely implies a concept above and beyond a class. Simply put, metaclasses let you intercept Python's `class` statement and provide special behavior each time a class is defined.
 
 It's important that you follow the *rule of least surprise* and only use the these mechanisms to implement well-understood idioms.
