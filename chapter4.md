@@ -172,3 +172,5 @@ class Grade(object):
 
 Don't get bogged down trying to understand exactly how `__getattribute__` attributes uses the descriptor protocol for getting and setting attributes.
 
+P.S. [Descriptor HowTo Guide](https://docs.python.org/3/howto/descriptor.html)
+
