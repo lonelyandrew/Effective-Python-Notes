@@ -174,3 +174,63 @@ Don't get bogged down trying to understand exactly how `__getattribute__` attrib
 
 P.S. [Descriptor HowTo Guide](https://docs.python.org/3/howto/descriptor.html)
 
+## Item 32: Use `__getattr__`, `__getattribute__`, and `__setattr__` for Lazy Attributes
+If your class defines `__getattr__`, that method is called every time an attribute can't be found in an object's instance dictionary. But the `__getattribute__` method is called every time an attribute is accessed on an object, even in cases where is *does* exist in the attribute dictionary.
+
+Python code implementing generic functionality often relies on the `hasattr` built-in function to determine when properties exist, and the `getattr` built-in function to retrieve property values. These functions also hook in the instance dictionary for an attribute name before calling `__getattr__`.
+
+`__setattr__` is a similar language hook that lets you intercept arbitary attribute assignments. Unlike retrieving an attribute with `__getattr__` and `__getattribute__`, there is no need for two separate methods. The `__setattr__` is always called every time an attribute is assigned on an instance (either directly or through the `setattr` built-in function).
+
+The problem with `__getattribute__` and `__setattr__` is that they are called on every attribute access for an object, even when you may not want that to happen.
+
+For example, say you want attribute accesses on your object to actually look up keys in an associated dictionary.
+
+```Python
+class BrokenDictionaryDB(object):
+    def __init__(self, data):
+        self._data = data
+
+    def __getattribute__(self, name):
+        print(f'Called __getattribute__({name})')
+        return self._data[name]
+
+
+if __name__ == '__main__':
+    data = BrokenDictionaryDB({'foo': 3})
+    data.foo
+
+>>>
+Called __getattribute__(foo)
+Called __getattribute__(_data)
+Called __getattribute__(_data)
+Called __getattribute__(_data)
+...
+Traceback (most recent call last):
+...
+RecursionError: maximum recursion depth exceeded while calling a Python object
+```
+
+The problem is that `__getattribute__` accesses `self.data`, which causes `__getattribute__` to run again, which accesses `self.data` again, and so on.
+
+The solution is to use the `super().__getattribute__` method on your instance to fetch values from the instance attribute dictionary. This avoid recursion.
+
+```Python
+class BrokenDictionaryDB(object):
+    def __init__(self, data):
+        self._data = data
+
+    def __getattribute__(self, name):
+        print(f'Called __getattribute__({name})')
+        data_dict = super().__getattribute__('_data')
+        return data_dict[name]
+
+
+if __name__ == '__main__':
+    data = BrokenDictionaryDB({'foo': 3})
+    print(data.foo)
+
+>>>
+Called __getattribute__(foo)
+3
+```
+
