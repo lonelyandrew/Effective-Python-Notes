@@ -234,3 +234,108 @@ Called __getattribute__(foo)
 3
 ```
 
+## Item 33: Validate Subclasses with Metaclasses
+
+A metaclas is defined by inheriting from `type`. In the default case, a metaclass reveives the contents of associated `class` statements in its `__new__` method. Here, you can modify the class information before the type is actually constructed.
+
+```Python
+class Meta(type):
+    def __new__(meta, name, bases, class_dict):
+        print((meta, name, bases, class_dict))
+        return type.__new__(meta, name, bases, class_dict)
+
+
+# Python 3
+class MyClass(object, metaclass=Meta):
+    stuff = 123
+
+    def foo(self):
+        pass
+
+# Python 2
+class MyClassInPython2(object):
+    __metaclass__ = Meta
+    stuff = 123
+
+    def foo(self):
+        pass
+
+if __name__ == '__main__':
+    pass
+
+> python3 test3.py
+
+(<class '__main__.Meta'>, 'MyClass', (<class 'object'>,), {'__module__': '__main__', '__qualname__': 'MyClass', 'stuff': 123, 'foo': <function MyClass.foo at 0x100d87840>})
+
+> python test3.py
+
+(<class '__main__.Meta'>, 'MyClassInPython2', (<type 'object'>,), {'__module__': '__main__', 'stuff': 123, '__metaclass__': <class '__main__.Meta'>, 'foo': <function foo at 0x1010712a8>})
+```
+
+The `__new__` method of metaclasses is run after the `class` statement's entire body has been processed.
+
+You can add functionality to the `Meta.__new__` method in order to validate all of the parameters of a class before it's defined.
+
+For example, say you want to represent any type of multisided polygon. You can do this by defining a special validating metaclass and using it in the base class of your polygon class hierarchy. Note that it's important not to apply the same validation to the base class.
+
+```Python
+class ValidationPolygon(type):
+    def __new__(meta, name, bases, class_dict):
+        if bases != (object,):
+            if class_dict['sides'] < 3:
+                raise ValueError('Polygons need 3+ sides')
+        return type.__new__(meta, name, bases, class_dict)
+
+
+class Polygon(object, metaclass=ValidationPolygon):
+    sides = None
+
+    @classmethod
+    def interior_angles(cls):
+        return (cls.sides - 2) * 180
+
+
+class Triangle(Polygon):
+    sides = 3
+
+
+
+print('Before class')
+class Line(Polygon):
+    print('Before sides')
+    sides = 1
+    print('After sides')
+print('After class')
+
+
+if __name__ == '__main__':
+    pass
+    
+>>>
+Before class
+Before sides
+After sides
+Traceback (most recent call last):
+  File "test3.py", line 23, in <module>
+    class Line(Polygon):
+  File "test3.py", line 5, in __new__
+    raise ValueError('Polygons need 3+ sides')
+ValueError: Polygons need 3+ sides
+```
+
+## Item 34: Register Class Existence with Metaclasses
+Class registration is a helpful pattern for building modular Python programs.
+
+Metaclasses let you run registration code automatically each time your base class is subclassed in a program.
+
+Using metaclasses for class registration avoids errors by ensuring that you never miss a registration call.
+
+## Item 35: Annotate Classes Attributes with Metaclasses
+Metaclasses enable you to modify a class's attributes before the class is fully defined.
+
+Descriptors and metaclasses make a powerful combination for declarative behavior and runtime introspection.
+
+You can avoid both memory leaks and the `weakref` module by using metaclasses along with descriptors.
+
+(END OF CHAPTER 4)
+
