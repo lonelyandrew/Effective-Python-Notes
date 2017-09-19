@@ -477,8 +477,420 @@ upload_queue.join()
 print(done_queue.qsize(), 'items finished')
 ```
 
+## Item 40: Consider Coroutines to Run Many Functions Concurrently
+Threads give Python programmers a way to run multiple functions seemingly at the same time. But there are three big problems with threads:
+
++ They require special tools to coordinate with each other safely. This makes code that uses threads harder to reason about than procedural, single-threaded code. This complexity makes threaded code more difficult to extend and maintain over time.
++ Threads require a lot of memory, about 8MB per executing thread. On many computers, that amount of memory doesn't matter for a dozen threads or so. But what if you want your program to run tens of thousands of functions "simultaneously"? These functions may correspond to user requests to a server, pixels on a screen, particles in a simulation, etc. Running a thread per unique activity just won't work.
++ Threads are costly to start. If you want to constantly be creating new concurrent functions and finishing them, the overhead of using threads becomes large and slows everything down.
+
+Python can work around all these issues with *coroutines*. Coroutines let you have many seemingly simultaneous functions in your Python programs. They are implemented as an extension to generators. The cost of starting a generator coroutine is a function call. Once active, they each use less than 1KB of memory until they're exhausted.
+
+Coroutines work by enabling the code consuming a generator to `send` a value back into the generator function after each `yield` expression. The generator function receives the value passed to the `send` function as the result of the corresponding `yield` expression.
+
+```Python
+def my_coroutine():
+    while True:
+        received = yield
+        print('Received:', received)
 
 
+it = my_coroutine()
+next(it)  # Prime the coroutine
+it.send('First')
+it.send('Second')
+
+>>>
+Received: First
+Received: Second
+```
+
+The initial call to `next` is required to prepare the generator for receiving the first `send` by advancing it to the first `yield` expression. You can also prepare the generator by the expression `it.send(None)`.
+
+For example, say you want to implement a generator coroutine that yields the minimum value it's been sent so far. Here, the bare `yield` prepares the coroutine with the initial minimum value sent in from the outside. Then the generator repeatedly yields the new minimum in exchange for the next value to consider.
+
+```Python
+def minimize():
+    current = yield
+    while True:
+        value = yield current
+        current = min(value, current)
+
+it = minimize()
+next(it)
+print(it.send(10))
+print(it.send(4))
+print(it.send(22))
+print(it.send(-1))
+
+>>>
+10
+4
+4
+-1
+```
+
+The code for game of life:
 
 
+```Python
+from collections import namedtuple
+
+
+ALIVE = '*'
+EMPTY = '-'
+
+Query = namedtuple('Query', ('y', 'x'))
+
+
+def count_neighbors(y, x):
+    n_ = yield Query(y+1, x+0)  # North
+    ne = yield Query(y+1, x+1)  # North East
+    e_ = yield Query(y+0, x+1)  # East
+    se = yield Query(y-1, x+1)  # South East
+    s_ = yield Query(y-1, x+0)  # South
+    sw = yield Query(y-1, x-1)  # South West
+    w_ = yield Query(y+0, x-1)  # West
+    nw = yield Query(y+1, x-1)  # North West
+
+    neighbor_states = [n_, ne, e_, se, s_, sw, w_, nw]
+    count = 0
+    for state in neighbor_states:
+        if state == ALIVE:
+            count += 1
+    return count
+
+
+it = count_neighbors(10, 5)
+q1 = next(it)
+print('First yield: ', q1)
+q2 = it.send(ALIVE)
+print('Second yield: ', q2)
+q3 = it.send(ALIVE)
+print('Third yield: ', q3)
+q4 = it.send(EMPTY)
+print('Fourth yield: ', q4)
+q5 = it.send(EMPTY)
+print('Fifth yield: ', q5)
+q6 = it.send(EMPTY)
+print('Sixth yield: ', q6)
+q7 = it.send(EMPTY)
+print('Seven yield: ', q7)
+q8 = it.send(EMPTY)
+print('Eighth yield: ', q8)
+
+try:
+    count = it.send(EMPTY)
+except StopIteration as e:
+    print('Count: ', e.value)
+
+
+Transition = namedtuple('Transition', ('y', 'x', 'state'))
+
+
+def game_logic(state, neighbors):
+    if state == ALIVE:
+        if neighbors < 2:
+            return EMPTY
+        elif neighbors > 3:
+            return EMPTY
+    else:
+        if neighbors == 3:
+            return ALIVE
+    return state
+
+
+def step_cell(y, x):
+    state = yield Query(y, x)
+    neighbors = yield from count_neighbors(y, x)
+    next_state = game_logic(state, neighbors)
+    yield Transition(y, x, next_state)
+
+
+it = step_cell(10, 5)
+q0 = next(it)
+print('Me:      ', q0)
+q1 = it.send(ALIVE)
+print('Q1       ', q1)
+print('...')
+q2 = it.send(ALIVE)
+q3 = it.send(ALIVE)
+q4 = it.send(ALIVE)
+q5 = it.send(ALIVE)
+q6 = it.send(EMPTY)
+q7 = it.send(EMPTY)
+q8 = it.send(EMPTY)
+t1 = it.send(EMPTY)
+print('Outcome: ', t1)
+
+
+TICK = object()
+
+
+def simulate(height, width):
+    while True:
+        for y in range(height):
+            for x in range(width):
+                yield from step_cell(y, x)
+        yield TICK
+
+
+class Grid(object):
+    def __init__(self, height, width):
+        self.height = height
+        self.width = width
+        self.rows = []
+        for _ in range(self.height):
+            self.rows.append([EMPTY] * self.width)
+
+    def __str__(self):
+        output = ''
+        for row in self.rows:
+            for cell in row:
+                output += cell
+            output += '\n'
+        return output
+
+    def query(self, y, x):
+        return self.rows[y % self.height][x % self.width]
+
+    def assign(self, y, x, state):
+        self.rows[y % self.height][x % self.width] = state
+
+
+def live_a_generation(grid, sim):
+    progeny = Grid(grid.height, grid.width)
+    item = next(sim)
+    while item is not TICK:
+        if isinstance(item, Query):
+            state = grid.query(item.y, item.x)
+            item = sim.send(state)
+        else:
+            progeny.assign(item.y, item.x, item.state)
+            item = next(sim)
+    return progeny
+
+
+grid = Grid(5, 9)
+grid.assign(0, 3, ALIVE)
+grid.assign(1, 4, ALIVE)
+grid.assign(2, 2, ALIVE)
+grid.assign(2, 3, ALIVE)
+grid.assign(2, 4, ALIVE)
+print(grid)
+
+
+class ColumnPrinter(object):
+    def __init__(self):
+        self.columns = []
+
+    def append(self, data):
+        self.columns.append(data)
+
+    def __str__(self):
+        row_count = 1
+        for data in self.columns:
+            row_count = max(row_count, len(data.splitlines()) + 1)
+        rows = [''] * row_count
+        for j in range(row_count):
+            for i, data in enumerate(self.columns):
+                line = data.splitlines()[max(0, j - 1)]
+                if j == 0:
+                    padding = ' ' * (len(line) // 2)
+                    rows[j] += padding + str(i) + padding
+                else:
+                    rows[j] += line
+                if (i + 1) < len(self.columns):
+                    rows[j] += ' | '
+        return '\n'.join(rows)
+
+columns = ColumnPrinter()
+sim = simulate(grid.height, grid.width)
+for i in range(5):
+    print('round', i)
+    columns.append(str(grid))
+    grid = live_a_generation(grid, sim)
+
+print(columns)
+
+>>>
+First yield:  Query(y=11, x=5)
+Second yield:  Query(y=11, x=6)
+Third yield:  Query(y=10, x=6)
+Fourth yield:  Query(y=9, x=6)
+Fifth yield:  Query(y=9, x=5)
+Sixth yield:  Query(y=9, x=4)
+Seven yield:  Query(y=10, x=4)
+Eighth yield:  Query(y=11, x=4)
+Count:  2
+Me:       Query(y=10, x=5)
+Q1        Query(y=11, x=5)
+...
+Outcome:  Transition(y=10, x=5, state='-')
+---*-----
+----*----
+--***----
+---------
+---------
+
+round 0
+round 1
+round 2
+round 3
+round 4
+    0     |     1     |     2     |     3     |     4
+---*----- | --------- | --------- | --------- | ---------
+----*---- | --*-*---- | ----*---- | ---*----- | ----*----
+--***---- | ---**---- | --*-*---- | ----**--- | -----*---
+--------- | ---*----- | ---**---- | ---**---- | ---***---
+--------- | --------- | --------- | --------- | ---------
+```
+
+Python 2 is missing some of the syntactical sugar that makes coroutines so elegant in Python 3. There are two limitations.
+
+First, there is no `yield from` expression. That means that when you want to compose generator coroutines in Python 2, you need to include an additional loop at the delegation point.
+
+```Python
+def delegated():
+    yield 1
+    yield 2
+
+
+def composed():
+    yield 'A'
+    # yield from delegated()
+    for value in delegated():
+        yield value
+    yield 'B'
+
+print(list(composed()))
+
+>>>
+['A', 1, 2, 'B']
+```
+
+The second limitation is that there is no support for the `return` statement in Python 2 generators. To get the same behavior that interacts correctly with `try`/`except`/`finally` blocks, you need to define your own exception type and raise it when you want to return a value.
+
+```Python
+class MyReturn(Exception):
+    def __init__(self, value):
+        self.value = value
+
+
+def delegated():
+    yield 1
+    raise MyReturn(2)
+    yield 'Not reached'
+
+
+def composed():
+    try:
+        for value in delegated():
+            yield value
+    except MyReturn as e:
+        output = e.value
+    yield output * 4
+
+print(list(composed()))
+
+>>>
+[1, 8]
+```
+
+### Item 41: Consider `concurrent.futures` for True Parallelism
+The `multiprocessing` built-in module, easily accessed via the `concurrent.futures` built-in module, enables Python to utilize multiple CPU cores in parallel by running additional interpreters as child processes. These child processes are separate from the main interpreter, so their global interpreter locks are also separate. Each child can fully utilize one CPU core. Each child has a link to the main process where it receives instructions to do computation and returns results.
+
+```Python
+def gcd(pair):
+    a, b = pair
+    low = min(a, b)
+    for i in range(low, 0, -1):
+        if a % i == 0 and b % i == 0:
+            return i
+
+
+from time import time
+numbers = [(1963309, 2265973), (2030677, 3814172),
+           (1551645, 2229620), (2039045, 2020802)]
+start = time()
+results = list(map(gcd, numbers))
+end = time()
+print('Took %.3f seconds' % (end - start))
+
+>>>
+Took 1.053 seconds
+```
+
+Running this code on multiple Python threads will yield no speed improvement because the GIL prevents Python from using multiple CPU cores in parallel.
+
+```Python
+from concurrent.futures import ThreadPoolExecutor
+
+
+def gcd(pair):
+    a, b = pair
+    low = min(a, b)
+    for i in range(low, 0, -1):
+        if a % i == 0 and b % i == 0:
+            return i
+
+
+from time import time
+numbers = [(1963309, 2265973), (2030677, 3814172),
+           (1551645, 2229620), (2039045, 2020802)]
+start = time()
+pool = ThreadPoolExecutor(max_workers=2)
+results = list(pool.map(gcd, numbers))
+end = time()
+print('Took %.3f seconds' % (end - start))
+
+>>>
+Took 1.068 seconds
+```
+
+It's even slower this time because of the overhead of starting and communicating with the pool of threads.
+
+If I replace the `ThreadPoolExecutor` with the `ProcessPoolExecutor` from the `concurrent.futures` module, everything speeds up.
+
+```Python
+from concurrent.futures import ProcessPoolExecutor
+
+
+def gcd(pair):
+    a, b = pair
+    low = min(a, b)
+    for i in range(low, 0, -1):
+        if a % i == 0 and b % i == 0:
+            return i
+
+
+from time import time
+numbers = [(1963309, 2265973), (2030677, 3814172),
+           (1551645, 2229620), (2039045, 2020802)]
+start = time()
+pool = ProcessPoolExecutor(max_workers=2)
+results = list(pool.map(gcd,numbers))
+end = time()
+print('Took %.3f seconds' % (end - start))
+
+>>>
+Took 0.556 seconds
+```
+
+Here's what the `ProcessPoolExecutor` class actually does (via the low-level constructs provided by the `multiprocessing` module):
+
+1. It takes each item from the `numbers` input data to `map`.
+2. It serializes it into binary data using the `pickle` module.
+3. It copies the serialized data from the main interpreter process to a child interpreter process over a local socket.
+4. Next, it deserialized the data back into Python objects using `pickle` in the child process.
+5. It then imports the Python module containing the `gcd` function.
+6. It runs the function on the input data in parallel with other child processes.
+7. It serialized the result back into bytes.
+8. It copies those bytes back through the socket.
+9. It deserializes the bytes back into Python objects in the parent process.
+10. Finally, it merges the results from multiple children into a single list to return.
+
+This scheme is well suited to certain types of isolated, high-leverage tasks. By *isolated*, I mean functions that don't need to share state with other parts of the program. By *high-leverage*, I mean situations in which only a small amount of data must be transferred between the parent and children processes to enable a large amount of computation.
+
+(END OF CHAPTER 5)
 
