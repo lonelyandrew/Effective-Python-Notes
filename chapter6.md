@@ -172,8 +172,184 @@ DEBUG:root:More debug data
 
 To enable your own functions to supply values for `as` targets, all you need t o do is `yield` a value from your context manager.
 
+## Item 44: Make `pickle` Reliable with `copyreg`
+The `pickle` built-in module can serialize Python objects into a stream of bytes and deserialize bytes back into objects. Pickled byte streams shouldn't be used to communicate untrusted parties. The purpose of `pickle` is to let you pass Python objects between programs that you control over binary channels.
+
+The `pickle` module's serialization format is *unsafe* by design. The serialized data contains what is essentially a program that describes how to reconstruct the original Python object. This means a malicious pickle `pickle` payload could be used to compromise any part of the Python program that attempts to deserialize it.
+
+In contrast, the `json` module is safe by design. Serialized JSON data contains a simple description of an object hierarchy. Deserializing JSON data does not expose a Python program to any additional risk. Formats like JSON should be used for communication between programs or people that don't trust each other.
+
+For example, say you want to use a Python object to represent the state of a player's progress in a game. The game state includes the level the player is on and the number of lives he or she has remaining.
+
+```Python
+import pickle
 
 
+class GameState(object):
+    def __init__(self):
+        self.level = 0
+        self.lives = 4
 
 
+state = GameState()
+state.level += 1
+state.lives -= 1
+
+state_path = '/tmp/game_state.bin'
+with open(state_path, 'wb') as f:
+    pickle.dump(state, f)
+
+with open(state_path, 'rb') as f:
+    state_after = pickle.load(f)
+
+print(state_after.__dict__)
+
+>>>
+{'level': 1, 'lives': 3}
+```
+
+The problem with this approach is what happens as the game's features expand over time. Imagine you want the player to earn points towards a high score. To track the player's points, you'd add a new field to the `GameState` class.
+
+```Python
+import pickle
+
+
+class GameState(object):
+    def __init__(self):
+        self.level = 0
+        self.lives = 4
+        self.point = 0
+
+
+state = GameState()
+serialized = pickle.dumps(state)
+state_after = pickle.loads(serialized)
+print(state_after.__dict__)
+
+>>>
+{'level': 0, 'lives': 4, 'point': 0}
+```
+
+But what happens to older saved `GameState` objects that the used may want to resume?
+
+```Python
+state_path = '/tmp/game_state.bin'
+with open(state_path, 'rb') as f:
+    state_after = pickle.load(f)
+print(state_after.__dict__)
+
+>>>
+{'level': 1, 'lives': 3}
+```
+
+The `points` attributes is missing! This is especially confusing because the returned object is an instance of the new `GameState` class.
+
+```Python
+assert isinstance(state_after, GameState)
+```
+
+Fixing these problems is straightforward using the `copyreg` built-in module. The `copyreg` module lets you register the functions responsible for serializing Python objects, allowing you to control behavior of `pickle` and make it more reliable.
+
+In the simplest case, you can use a constructor with default arguments to ensure that `GameState` objects will always have all attributes after unpickling.
+
+```Python
+class GameState(object):
+    def __init__(self, level=0, lives=4, points=0):
+        self.level = level
+        self.lives = lives
+        self.point = points
+```
+
+To use this constructor for pickling, I define a helper function that takes a `GameState` object and turns it into a tuple of parameters for the `copyreg` module.
+
+```Python
+def pickle_game_state(game_state):
+    kwargs = game_state.__dict__
+    return unpickle_game_state, (kwargs, )
+```
+
+Now I need to define the `unpickle_game_state` helper. This function takes serialized data and parameters from `pickle_game_state` and returns the corresponding `GameState` object.
+
+```Python
+def unpickle_game_state(kwargs):
+    return GameState(**kwargs)
+```
+
+Now, I register these with the `copyreg` built-in module.
+
+```Python
+copyreg.pickle(GameState, pickle_game_state)
+```
+
+Serializing and deserializing works as before.
+
+```Python
+state = GameState()
+state.points += 1000
+serialized = pickle.dumps(state)
+state_after = pickle.loads(serialized)
+print(state_after.__dict__)
+
+>>>
+{'level': 0, 'lives': 4, 'points': 1000}
+```
+
+Sometimes you'll need to make backwards-incompatible changes to your Python objects by removing fields. This prevents the default argument approach to serialization from working.
+
+
+For example, say you realize that a limited number of lives is a bad idea, and you want to remove the concept of lives from the game.
+
+```Python
+class GameState(object):
+    def __init__(self, level=0, points=0, magic=5):
+        self.level = level
+        self.points = points
+        self.magic = magic
+```
+
+The problem is that this breaks deserialization old game data. All fields from the old data, even ones removed from the class, will be passed to the `GameState` constructor by the `unpickle_game_state` function.
+
+The solution is to add a version parameter to the functions supplied to `copyreg`.
+
+```Python
+class GameState(object):
+    def __init__(self, level=0, points=0, magic=5):
+        self.level = level
+        self.points = points
+        self.magic = magic
+
+
+def pickle_game_state(game_state):
+    kwargs = game_state.__dict__
+    kwargs['version'] = 2
+    return unpickle_game_state, (kwargs, )
+
+
+def unpickle_game_state(kwargs):
+    version = kwargs.pop('version', 1)
+    if version == 1:
+        kwargs.pop('lives')
+    return GameState(**kwargs)
+copyreg.pickle(GameState, pickle_game_state)
+state_after = pickle.loads(serialized)
+print(state_after.__dict__)
+
+>>>
+{'level': 0, 'points': 1000, 'magic': 5}
+```
+One other issue you may encounter with `pickle` is breakage from renaming a class. Often over the life cycle of a program, you'll refactor your code by renaming classes and moving them to other modules. Unfortunately, this will break the `pickle` module unless you're careful.
+
+Here, I rename the `GameState` class to `BetterGameState`, removing the old class from the program entirely.
+
+Attempting to deserialize an old `GameState` object will now fail because the class can't be found. The cause of this exception is that the import path of the serialized object's class is encoded in the pickled data.
+
+The solution is to use `copyreg` again. You can specify a stable identifier for the function to use for unpickling an object. This allow you to transition pickled data to different classes with different names when it's deserialized.
+
+```Python
+copyreg.pickle(BetterGameState, pickle_game_state)
+```
+
+After using `copyreg`, you can see that the import path to `pickle_game_state` is encoded in the serialized data instead of `BetterGame`.
+
+The only gotcha is that you can't change the path of the module in which the `unpickle_game_state` function is present. Once you serialize data with a function, it must remain available on that import path for deserializing in the future.
 
