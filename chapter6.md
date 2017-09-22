@@ -75,6 +75,105 @@ fibonacci(n)
 (END)
 ```
 
+## Item 43: Consider `contextlib` and `with` Statements for Reusable `try/finally` Behavior
+The `with` statement in Python is used to indicate when code is running in a special context. The `with` statement eliminates the need to write the repetitive code of the `try/finally` construction.
+
+It's easy to make your objects and functions capable of use in `with` statements by using the `contextlib` built-in module. This module contains the `contextmanager` decorator, which lets a simple function be used in `with` statements. This is much easier than defining a new class with the special methods `__enter__` and `__exit__` (the standard way).
+
+For example, say you want a region of your code to have more debug logging sometimes.
+
+```Python
+import logging
+
+
+def my_function():
+    logging.debug('Some debug data')
+    logging.error('Error log here')
+    logging.debug('More debug data')
+
+
+my_function()
+
+>>>
+ERROR:root:Error log here
+```
+
+I can elevate the log level of this function temporarily by defining a context manager. This helper function boosts the logging severity level before running the code in the `with` block and reduces the logging severity level afterward.
+
+```Python
+import logging
+from contextlib import contextmanager
+
+
+def my_function():
+    logging.debug('Some debug data')
+    logging.error('Error log here')
+    logging.debug('More debug data')
+
+@contextmanager
+def debug_logging(level):
+    logger = logging.getLogger()
+    old_level = logger.getEffectiveLevel()
+    logger.setLevel(level)
+    try:
+        yield
+    finally:
+        logger.setLevel(old_level)
+
+with debug_logging(logging.DEBUG):
+    my_function()
+
+>>>
+DEBUG:root:Some debug data
+ERROR:root:Error log here
+DEBUG:root:More debug data
+```
+
+The `yield` expression is the point at which the `with` block's content will execute. Any exceptions that happen in the `with` block will be re-raised by the `yield` expression for you to catch in the helper function.
+
+The standard way to implement it is as following:
+
+```Python
+import logging
+
+
+class DebugLogging(object):
+
+    def __init__(self, level):
+        self.level = level
+
+    def __enter__(self):
+        logger = logging.getLogger()
+        self.old_level = logger.getEffectiveLevel()
+        logger.setLevel(self.level)
+
+    def __exit__(self, *args):
+        logger = logging.getLogger()
+        logger.setLevel(self.old_level)
+
+
+def my_function():
+    logging.debug('Some debug data')
+    logging.error('Error log here')
+    logging.debug('More debug data')
+
+
+with DebugLogging(logging.DEBUG):
+    my_function()
+    
+
+>>>
+DEBUG:root:Some debug data
+ERROR:root:Error log here
+DEBUG:root:More debug data
+```
+
+The context manager passed to a `with` statement may also return an object. This object is assigned to a local variable in the `as` part of the compound statement. This gives the code running in the `with` block the ability to directly interact with its context.
+
+To enable your own functions to supply values for `as` targets, all you need t o do is `yield` a value from your context manager.
+
+
+
 
 
 
