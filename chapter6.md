@@ -471,6 +471,147 @@ print(sf_dt)
 2014-05-01 20:33:24-07:00
 ```
 
+## Item 46: Use Built-in Algorithms and Data Structures
 
+The Python standard library has many of the algorithms and data structures you'll need to use built in. Besides speed, using these common algorithms and data structures can make your life easier. Some of the most valuable tools you may want to use are tricky to implement correctly. Avoiding reimplementation of common functionality will save you time and headaches.
 
+### Double-ended Queue
+The `deque` class from the `collections` module is a double-ended queue. It provides constant time operations for inserting or removing items from its beginning or end. This makes it ideal for first-in-first-out (FIFO) queues.
+
+```Python
+from collections import deque
+
+fifo = deque()
+fifo.append(1)
+x = fifo.popleft()
+```
+
+The `list` built-in type also contains an ordered sequence of items like a queue. You can insert or remove items from the end of a list in constant time. But inserting or removing items from the head of a list takes linear time, which is much slower than the constant time of a `deque`.
+
+### Ordered Dictionary
+Standard dictionary are unordered. That means a `dict` with the same keys and values can result in different orders of iteration. This behavior is s surprising byproduct of the way the dictionary's fast hash table is implemented.
+
+The `OrderedDict` class from the `collections` module is a special type of dictionary that keeps track of the order in which its keys were inserted. Iterating the keys of an `OrderedDict` has predictable behavior.
+
+```Python
+from collections import OrderedDict
+
+a = OrderedDict()
+a['foo'] = 1
+a['bar'] = 2
+
+b = OrderedDict()
+b['foo'] = 'red'
+b['bar'] = 'blue'
+
+for value1, value2 in zip(a.values(), b.values()):
+    print(value1, value2)
+    
+>>>
+1 red
+2 blue
+```
+
+### Default Dictionary
+Dictionaries are useful for bookkeeping and tracking statistics. One  problem with dictionaries is that you can't assume any keys are already present. The makes it clumsy to do simple things like increment a counter stored in a dictionary.
+
+```Python
+stats = {}
+key = 'my_counter'
+
+if key not in stats:
+    stats[key] = 0
+stats[key] += 1
+```
+
+The `defaultdict` class from the `collections` module simplifies this by automatically storing a default value when a key doesn't exist. All you have to do is provide a function that will return the default value each time a key is missing.
+
+```Python
+from collections import defaultdict
+
+stats = defaultdict(int)
+stats['my_counter'] += 1
+```
+
+### Heap Queue
+Heaps are useful data structures for maintaining a priority queue. The `heapq` module provides functions for creating heaps in standard `list` type with functions like `heappush`, `heappop`, and `nsmallest・
+
+Items of any priority can be inserted into the heap in any order.
+
+```Python
+from heapq import heappush, heappop, nsmallest
+
+a = []
+heappush(a, 5)
+heappush(a, 3)
+heappush(a, 7)
+heappush(a, 4)
+```
+
+Items are always removed by highest priority (lowest number) first.
+
+```Python
+print(heappop(a), heappop(a), heappop(a), heappop(a))
+
+>>>
+3 4 5 7
+```
+
+The resulting `list` is easy to use outside of `heapq・ Accessing the 0 index of the heap will always return the smallest item.
+
+```Python
+heappush(a, 5)
+heappush(a, 3)
+heappush(a, 7)
+heappush(a, 4)
+assert a[0] == nsmallest(1, a)[0] == 3
+```
+
+Calling the `sort` method on the list maintains the heap invariant.
+
+```Python
+print('Before:', a)
+a.sort()
+print('After:', a)
+
+>>>
+Before: [3, 4, 7, 5]
+After: [3, 4, 5, 7]
+```
+
+Each of these `heapq` operations takes logarithmic time in proportion to the length of the list. Doing the same work with a standard Python list would scale linearly.
+
+### Bisection
+Searching for an item in a `list` takes linear time proportional to its length when you call the `index` method.
+
+The `bisect` module's functions, such as `bisect_left`, provide an efficient binary search through a sequence  of sorted of sorted items. The index it returns is the insertion point of the value into the sequence.
+
+```Python
+from bisect import bisect_left
+
+x = list(range(100 ** 6))
+i = bisect_left(x, 991234)
+```
+
+The complexity of a binary search is logarithmic. That means using `bisect` to search a list of           1 million items takes roughly the same amount of time as using `index` to linearly search a list of 14 items.
+
+### Iterator Tools
+The `itertools` built-in module contains a large number of functions that are useful for organizing and interacting with iterators. Not all of these are available in Python 2, but they can easily be built using simple recepes documented in the module.
+
+The `itertools` functions fall into three main categories:
+
+* Linking iterators together
+    * `chain`: Combine multiple iterators into a single sequential iterator.
+    * `cycle`: Repeats an iterator's items forever.
+    * `tee`: Splits a single iterator into multiple parallel iterators.
+    * `zip_longest`: A variant of the `zip` built-in function that works well with iterators of different lengths.
+* Filtering items from an iterator
+    * `islice`: Slices an iterator by numerical indexes without copying.
+    * `takewhile`: Returns items from an iterator while a predicate function returns `True`.
+    * `dropwhile`: Returns items from an iterator once the predicate function reuturns `False` for the first time.
+    * `filterfalse`: Returns all items from an iterator where a predicate function returns `False`. The opposite of the `filte` built-in function.
+* Combinations of items from iterators
+    * `product`: Returns the Cartesian product of items from an iterator, which is a nice alternative to deeply nested list comprehension.
+    * `permutations`: Returns ordered permutations of length N with items from an iterator.
+    * `combination` Returns the unordered combinations of length N with unrepeated items from an iterator.
 
